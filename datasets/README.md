@@ -12,7 +12,7 @@ For our class-conditional models, we use the official ILSVRC2012 dataset with ma
 
 Once the file is downloaded, extract it and look inside. You should see 1000 `.tar` files. You need to extract each of these, which may be impractical to do by hand on your operating system. To automate the process on a Unix-based system, you can `cd` into the directory and run this short shell script:
 
-```
+```shell
 for file in *.tar; do tar xf "$file"; rm "$file"; done
 ```
 
@@ -30,7 +30,7 @@ The `cifar_train` and `cifar_test` directories can be passed directly to the tra
 
 To download and pre-process LSUN bedroom, clone [fyu/lsun](https://github.com/fyu/lsun) on GitHub and run their download script `python3 download.py bedroom`. The result will be an "lmdb" database named like `bedroom_train_lmdb`. You can pass this to our [lsun_bedroom.py](lsun_bedroom.py) script like so:
 
-```
+```shell
 python lsun_bedroom.py bedroom_train_lmdb lsun_train_output_dir
 ```
 

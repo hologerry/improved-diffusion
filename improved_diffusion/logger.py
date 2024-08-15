@@ -3,17 +3,19 @@ Logger copied from OpenAI baselines to avoid extra RL-based dependencies:
 https://github.com/openai/baselines/blob/ea25b9e8b234e6ee1bca43083f8f3cf974143998/baselines/logger.py
 """
 
-import os
-import sys
-import shutil
-import os.path as osp
-import json
-import time
 import datetime
+import json
+import os
+import os.path as osp
+import shutil
+import sys
 import tempfile
+import time
 import warnings
+
 from collections import defaultdict
 from contextlib import contextmanager
+
 
 DEBUG = 10
 INFO = 20
@@ -39,16 +41,14 @@ class HumanOutputFormat(KVWriter, SeqWriter):
             self.file = open(filename_or_file, "wt")
             self.own_file = True
         else:
-            assert hasattr(filename_or_file, "read"), (
-                "expected file or str, got %s" % filename_or_file
-            )
+            assert hasattr(filename_or_file, "read"), "expected file or str, got %s" % filename_or_file
             self.file = filename_or_file
             self.own_file = False
 
     def writekvs(self, kvs):
         # Create strings for printing
         key2str = {}
-        for (key, val) in sorted(kvs.items()):
+        for key, val in sorted(kvs.items()):
             if hasattr(val, "__float__"):
                 valstr = "%-8.3g" % val
             else:
@@ -66,11 +66,8 @@ class HumanOutputFormat(KVWriter, SeqWriter):
         # Write out the data
         dashes = "-" * (keywidth + valwidth + 7)
         lines = [dashes]
-        for (key, val) in sorted(key2str.items(), key=lambda kv: kv[0].lower()):
-            lines.append(
-                "| %s%s | %s%s |"
-                % (key, " " * (keywidth - len(key)), val, " " * (valwidth - len(val)))
-            )
+        for key, val in sorted(key2str.items(), key=lambda kv: kv[0].lower()):
+            lines.append("| %s%s | %s%s |" % (key, " " * (keywidth - len(key)), val, " " * (valwidth - len(val))))
         lines.append(dashes)
         self.file.write("\n".join(lines) + "\n")
 
@@ -83,7 +80,7 @@ class HumanOutputFormat(KVWriter, SeqWriter):
 
     def writeseq(self, seq):
         seq = list(seq)
-        for (i, elem) in enumerate(seq):
+        for i, elem in enumerate(seq):
             self.file.write(elem)
             if i < len(seq) - 1:  # add space unless this is the last one
                 self.file.write(" ")
@@ -125,7 +122,7 @@ class CSVOutputFormat(KVWriter):
             self.file.seek(0)
             lines = self.file.readlines()
             self.file.seek(0)
-            for (i, k) in enumerate(self.keys):
+            for i, k in enumerate(self.keys):
                 if i > 0:
                     self.file.write(",")
                 self.file.write(k)
@@ -134,7 +131,7 @@ class CSVOutputFormat(KVWriter):
                 self.file.write(line[:-1])
                 self.file.write(self.sep * len(extra_keys))
                 self.file.write("\n")
-        for (i, k) in enumerate(self.keys):
+        for i, k in enumerate(self.keys):
             if i > 0:
                 self.file.write(",")
             v = kvs.get(k)
@@ -156,30 +153,34 @@ class TensorBoardOutputFormat(KVWriter):
         os.makedirs(dir, exist_ok=True)
         self.dir = dir
         self.step = 1
-        prefix = "events"
-        path = osp.join(osp.abspath(dir), prefix)
-        import tensorflow as tf
-        from tensorflow.python import pywrap_tensorflow
-        from tensorflow.core.util import event_pb2
-        from tensorflow.python.util import compat
+        from torch.utils.tensorboard import SummaryWriter
 
-        self.tf = tf
-        self.event_pb2 = event_pb2
-        self.pywrap_tensorflow = pywrap_tensorflow
-        self.writer = pywrap_tensorflow.EventsWriter(compat.as_bytes(path))
+        # prefix = "events"
+        # path = osp.join(osp.abspath(dir), prefix)
+        # import tensorflow as tf
+        # from tensorflow.python import pywrap_tensorflow
+        # from tensorflow.core.util import event_pb2
+        # from tensorflow.python.util import compat
+        # self.tf = tf
+        # self.event_pb2 = event_pb2
+        # self.pywrap_tensorflow = pywrap_tensorflow
+        # self.writer = pywrap_tensorflow.EventsWriter(compat.as_bytes(path))
+        self.writer = SummaryWriter(dir)
 
     def writekvs(self, kvs):
-        def summary_val(k, v):
-            kwargs = {"tag": k, "simple_value": float(v)}
-            return self.tf.Summary.Value(**kwargs)
+        # def summary_val(k, v):
+        #     kwargs = {"tag": k, "simple_value": float(v)}
+        #     return self.tf.Summary.Value(**kwargs)
 
-        summary = self.tf.Summary(value=[summary_val(k, v) for k, v in kvs.items()])
-        event = self.event_pb2.Event(wall_time=time.time(), summary=summary)
-        event.step = (
-            self.step
-        )  # is there any reason why you'd want to specify the step?
-        self.writer.WriteEvent(event)
-        self.writer.Flush()
+        # summary = self.tf.Summary(value=[summary_val(k, v) for k, v in kvs.items()])
+        # event = self.event_pb2.Event(wall_time=time.time(), summary=summary)
+        # event.step = (
+        #     self.step
+        # )  # is there any reason why you'd want to specify the step?
+        # self.writer.WriteEvent(event)
+        # self.writer.Flush()
+        for k, v in kvs.items():
+            self.writer.add_scalar(k, v, self.step)
         self.step += 1
 
     def close(self):
@@ -193,13 +194,13 @@ def make_output_format(format, ev_dir, log_suffix=""):
     if format == "stdout":
         return HumanOutputFormat(sys.stdout)
     elif format == "log":
-        return HumanOutputFormat(osp.join(ev_dir, "log%s.txt" % log_suffix))
+        return HumanOutputFormat(osp.join(ev_dir, f"log{log_suffix}.txt"))
     elif format == "json":
-        return JSONOutputFormat(osp.join(ev_dir, "progress%s.json" % log_suffix))
+        return JSONOutputFormat(osp.join(ev_dir, f"progress{log_suffix}.json"))
     elif format == "csv":
-        return CSVOutputFormat(osp.join(ev_dir, "progress%s.csv" % log_suffix))
+        return CSVOutputFormat(osp.join(ev_dir, f"progress{log_suffix}.csv"))
     elif format == "tensorboard":
-        return TensorBoardOutputFormat(osp.join(ev_dir, "tb%s" % log_suffix))
+        return TensorBoardOutputFormat(osp.join(ev_dir, f"tb{log_suffix}"))
     else:
         raise ValueError("Unknown format specified: %s" % (format,))
 
@@ -229,7 +230,7 @@ def logkvs(d):
     """
     Log a dictionary of key-value pairs
     """
-    for (k, v) in d.items():
+    for k, v in d.items():
         logkv(k, v)
 
 
@@ -358,10 +359,7 @@ class Logger(object):
         else:
             d = mpi_weighted_mean(
                 self.comm,
-                {
-                    name: (val, self.name2cnt.get(name, 1))
-                    for (name, val) in self.name2val.items()
-                },
+                {name: (val, self.name2cnt.get(name, 1)) for (name, val) in self.name2val.items()},
             )
             if self.comm.rank != 0:
                 d["dummy"] = 1  # so we don't get a warning about empty dict
@@ -421,16 +419,12 @@ def mpi_weighted_mean(comm, local_name2valcount):
         name2sum = defaultdict(float)
         name2count = defaultdict(float)
         for n2vc in all_name2valcount:
-            for (name, (val, count)) in n2vc.items():
+            for name, (val, count) in n2vc.items():
                 try:
                     val = float(val)
                 except ValueError:
                     if comm.rank == 0:
-                        warnings.warn(
-                            "WARNING: tried to compute mean on non-float {}={}".format(
-                                name, val
-                            )
-                        )
+                        warnings.warn("WARNING: tried to compute mean on non-float {}={}".format(name, val))
                 else:
                     name2sum[name] += val * count
                     name2count[name] += count
@@ -492,4 +486,3 @@ def scoped_configure(dir=None, format_strs=None, comm=None):
     finally:
         Logger.CURRENT.close()
         Logger.CURRENT = prevlogger
-

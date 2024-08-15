@@ -6,12 +6,14 @@ import argparse
 import io
 import os
 
-from PIL import Image
 import lmdb
 import numpy as np
 
+from PIL import Image
+from tqdm.auto import tqdm, trange
 
 def read_images(lmdb_path, image_size):
+    print(f"reading images from {lmdb_path}...")
     env = lmdb.open(lmdb_path, map_size=1099511627776, max_readers=100, readonly=True)
     with env.begin(write=False) as transaction:
         cursor = transaction.cursor()
@@ -34,7 +36,7 @@ def read_images(lmdb_path, image_size):
 def dump_images(out_dir, images, prefix):
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)
-    for i, img in enumerate(images):
+    for i, img in tqdm(enumerate(images), desc="dumping images"):
         Image.fromarray(img).save(os.path.join(out_dir, f"{prefix}_{i:07d}.png"))
 
 

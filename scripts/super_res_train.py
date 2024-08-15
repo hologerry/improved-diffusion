@@ -3,17 +3,22 @@ Train a super-resolution model.
 """
 
 import argparse
+import os
+import sys
 
 import torch.nn.functional as F
+
+
+sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__), "../")))
 
 from improved_diffusion import dist_util, logger
 from improved_diffusion.image_datasets import load_data
 from improved_diffusion.resample import create_named_schedule_sampler
 from improved_diffusion.script_util import (
-    sr_model_and_diffusion_defaults,
-    sr_create_model_and_diffusion,
-    args_to_dict,
     add_dict_to_argparser,
+    args_to_dict,
+    sr_create_model_and_diffusion,
+    sr_model_and_diffusion_defaults,
 )
 from improved_diffusion.train_util import TrainLoop
 
@@ -25,9 +30,7 @@ def main():
     logger.configure()
 
     logger.log("creating model...")
-    model, diffusion = sr_create_model_and_diffusion(
-        **args_to_dict(args, sr_model_and_diffusion_defaults().keys())
-    )
+    model, diffusion = sr_create_model_and_diffusion(**args_to_dict(args, sr_model_and_diffusion_defaults().keys()))
     model.to(dist_util.dev())
     schedule_sampler = create_named_schedule_sampler(args.schedule_sampler, diffusion)
 

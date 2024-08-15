@@ -5,18 +5,22 @@ of samples from a regular model from image_sample.py.
 
 import argparse
 import os
+import sys
 
 import blobfile as bf
 import numpy as np
 import torch as th
 import torch.distributed as dist
 
+
+sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__), "../")))
+
 from improved_diffusion import dist_util, logger
 from improved_diffusion.script_util import (
-    sr_model_and_diffusion_defaults,
-    sr_create_model_and_diffusion,
-    args_to_dict,
     add_dict_to_argparser,
+    args_to_dict,
+    sr_create_model_and_diffusion,
+    sr_model_and_diffusion_defaults,
 )
 
 
@@ -27,12 +31,8 @@ def main():
     logger.configure()
 
     logger.log("creating model...")
-    model, diffusion = sr_create_model_and_diffusion(
-        **args_to_dict(args, sr_model_and_diffusion_defaults().keys())
-    )
-    model.load_state_dict(
-        dist_util.load_state_dict(args.model_path, map_location="cpu")
-    )
+    model, diffusion = sr_create_model_and_diffusion(**args_to_dict(args, sr_model_and_diffusion_defaults().keys()))
+    model.load_state_dict(dist_util.load_state_dict(args.model_path, map_location="cpu"))
     model.to(dist_util.dev())
     model.eval()
 

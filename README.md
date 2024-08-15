@@ -2,15 +2,13 @@
 
 This is the codebase for [Improved Denoising Diffusion Probabilistic Models](https://arxiv.org/abs/2102.09672).
 
-# Usage
-
 This section of the README walks through how to train and sample from a model.
 
 ## Installation
 
 Clone this repository and navigate to it in your terminal. Then run:
 
-```
+```shell
 pip install -e .
 ```
 
@@ -28,7 +26,7 @@ The images will automatically be scaled and center-cropped by the data-loading p
 
 To train your model, you should first decide some hyperparameters. We will split up our hyperparameters into three groups: model architecture, diffusion process, and training flags. Here are some reasonable defaults for a baseline:
 
-```
+```shell
 MODEL_FLAGS="--image_size 64 --num_channels 128 --num_res_blocks 3"
 DIFFUSION_FLAGS="--diffusion_steps 4000 --noise_schedule linear"
 TRAIN_FLAGS="--lr 1e-4 --batch_size 128"
@@ -36,20 +34,20 @@ TRAIN_FLAGS="--lr 1e-4 --batch_size 128"
 
 Here are some changes we experiment with, and how to set them in the flags:
 
- * **Learned sigmas:** add `--learn_sigma True` to `MODEL_FLAGS`
- * **Cosine schedule:** change `--noise_schedule linear` to `--noise_schedule cosine`
- * **Importance-sampled VLB:** add `--use_kl True` to `DIFFUSION_FLAGS` and add `--schedule_sampler loss-second-moment` to  `TRAIN_FLAGS`.
- * **Class-conditional:** add `--class_cond True` to `MODEL_FLAGS`.
+* **Learned sigmas:** add `--learn_sigma True` to `MODEL_FLAGS`
+* **Cosine schedule:** change `--noise_schedule linear` to `--noise_schedule cosine`
+* **Importance-sampled VLB:** add `--use_kl True` to `DIFFUSION_FLAGS` and add `--schedule_sampler loss-second-moment` to  `TRAIN_FLAGS`.
+* **Class-conditional:** add `--class_cond True` to `MODEL_FLAGS`.
 
 Once you have setup your hyper-parameters, you can run an experiment like so:
 
-```
+```shell
 python scripts/image_train.py --data_dir path/to/images $MODEL_FLAGS $DIFFUSION_FLAGS $TRAIN_FLAGS
 ```
 
 You may also want to train in a distributed manner. In this case, run the same command with `mpiexec`:
 
-```
+```shell
 mpiexec -n $NUM_GPUS python scripts/image_train.py --data_dir path/to/images $MODEL_FLAGS $DIFFUSION_FLAGS $TRAIN_FLAGS
 ```
 
@@ -63,7 +61,7 @@ The above training script saves checkpoints to `.pt` files in the logging direct
 
 Once you have a path to your model, you can generate a large batch of samples like so:
 
-```
+```shell
 python scripts/image_sample.py --model_path /path/to/model.pt $MODEL_FLAGS $DIFFUSION_FLAGS
 ```
 
